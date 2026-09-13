@@ -1,5 +1,5 @@
-.global ipf_sqrt2
-.type ipf_sqrt2 @function
+.globl ipf_sqrt2
+.type ipf_sqrt2, @function
 
 ipf_sqrt2:
 testl %edi, %edi
@@ -51,4 +51,4 @@ xorl %eax, %eax
 ret
 
 .global ipf_pow
-.type ipf_pow @function
+.type ipf_pow, @function

@@ -17,6 +17,7 @@
 constexpr size_t FIX_PI = 205887;
 constexpr size_t HALF_FIX = 32768;
 constexpr size_t FIX_INV_PI = 20861;
+constexpr size_t FIX_LOG2_E = 94548;
 
 ALWAYS_INLINE int32_t de_sinpi(int32_t x) {
     int32_t phase_shift = x + HALF_FIX;
@@ -108,4 +109,51 @@ ALWAYS_INLINE int32_t de_sinh(int32_t x) {
     int32_t res = (exp_pos - exp_neg) >> 1;
 
     return (x_q16 < 0) ? -res : res;
+}
+
+ALWAYS_INLINE int32_t de_cosh(int32_t x) {
+    if (x == 0) return 0;
+
+    int32_t abs_x = (abs_x < 0) ? -abs_x : abs_x;
+
+    int32_t u_q16 = (int32_t)(((int64_t)x_q16 * FIX_PI) >> FIX_SHIFT);
+
+    int32_t exp_pos = ip_exp2(u_q16);
+
+    int32_t exp_neg = ip_div_fast(FIX_ONE, exp_pos);
+
+    int32_t res = (exp_pos - exp_neg) >> 1;
+
+    return (x_q16 < 0) ? -res : res;
+}
+
+ALWAYS_INLINE int32_t de_tanh(int32_t x) {
+    if (x_q16 == 0) return FIX_ONE;
+
+    int32_t abs_x = (x_q16 < 0) ? -x_q16 : x_q16;
+
+    int32_t u_q16 = (int32_t)(((int64_t)abs_x * FIX_LOG2_E) >> FIX_SHIFT);
+
+    int32_t exp_pos = ip_exp2(u_q16);
+    int32_t exp_neg = ip_div_fast(FIX_ONE, exp_pos);
+
+    int32_t num = exp_pos - exp_neg;
+    int32_t den = exp_pos + exp_neg;
+    int32_t tanh_val = ip_div_fast(num, den);
+
+    int32_t tanh_sq = (int32_t)(((int64_t)tanh_val * tanh_val) >> FIX_SHIFT);
+
+    return FIX_ONE - tanh_sq;
+}
+
+ALWAYS_INLINE int32_t de_sinhf(int32_t x) {
+    return ip_to_float(de_sinh(x));
+}
+
+ALWAYS_INLINE int32_t de_coshf(int32_t x) {
+    return ip_to_float(de_cosh(x));
+}
+
+ALWAYS_INLINE int32_t de_tanhf(int32_t x) {
+    return ip_to_float(de_tanh(x));
 }
