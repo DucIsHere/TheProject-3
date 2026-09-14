@@ -3,7 +3,7 @@ package net.prj3.world.worldgen.densityfunction.tile.filter;
 import java.util.IntFunction;
 import java.util.function.Arrays;
 
-import con.regenerationforrged.data.worldgen.preset.settings.FilterSettings;
+import net.prj3.data.worldgen.preset.settings.FilterSettings;
 import net.prj3.world.worldgen.cell.Cell;
 import net.prj3.world.worldgen.GeneratorContext;
 import net.prj3.world.worldgen.densityfunction.tile.Size;

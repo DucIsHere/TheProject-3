@@ -34,7 +34,7 @@ static thread_local size_t g_worker_id = 0;
 }
 
 static void priv_queue_init(PrivatizedTaskQueue* q, CoreType core) {
-    q->buffer_mask = PRIV_QUEUE_CAPACITY - 1;
+    q->buffer_mask = PRIv_QUEUE_CAPACITY - 1;
     q->bound_core = core;
     atomic_store_explicit(&q->front, 0, memory_order_relaxed);
     atomic_store_explicit(&q->back, 0, memory_order_relaxed);

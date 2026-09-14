@@ -1,33 +1,16 @@
-#include "thread/threads/pool/ThreadPool.h"
+#include "ThreadPool.h"
 
-#incluce <immintrin.h>
+#include <immintrin.h>
 #include <stddef.h>
+#include <sched.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <threads.h>
 #include <unistd.h>
-#include <sched.h>
-#include <sys/syscall.h>
-#include <sys/time.h>
-#include <linux/futex.h>
 
 thread_local size_t g_workder_thread_id = 0;
-
-static long sys_futex(void* uaddr, int futex_op, uint32_t val, const struct timespec* time_out, void* uaddr2, uint32_t val3)
-{
-     return syscall(SYS_futex, uaddr, futex_op, val, time_out, uaddr2, val3);
-}
-
-static void futex_wait_private(_Atomic uint32_t* futex_word, uint32_t expected)
-{
-     sys_futex((void*)futex_word, FUTEX_WAIT_PRIVATE, expected, NULL, NULL, 0);
-}
-
-static void futex_wake_private(_Atomic uint32_t* futex_word, int count)
-{
-     sys_futex((void*)futex_word, FUTEX_WAKE_PRIVATE, count, NULL, NULL, 0);
-}
 
 static void pool_bind_thread_affinity(size_t thread_id)
 {
@@ -114,7 +97,7 @@ static inline void arena_free_task(TaskHandle* task)
 
 static inline bool queue_push(Thrd* pool, TaskPriority prio, CoreType core_type, TaskHandle* task)
 {
-     MPMCQueue* q = (core_type == CORE_TYPE_PCORE) ? &pool->p_queues[prio] : &pool->e_queues[prio];
+    MPMCQueue * q = (core_type == CORE_TYPE_PCORE) ? &pool->p_queues[prio] : &pool->e_queues[prio];
      QueueCell* cell;
      size_t pos = atomic_load_explicit(&q->tail, memory_order_relaxed);
 

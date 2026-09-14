@@ -1,9 +1,13 @@
 pluginManagement {
-    repositories {
-        maven { url "https://maven.fabricmc.net/" }
-        gradlePluginPortal()
-    }
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		mavenCentral()
+		gradlePluginPortal()
+	}
 }
 
-include("src")
-rootProject.name = "TheOroject-3"
+// Should match your modid
+rootProject.name = 'theproject-3'
