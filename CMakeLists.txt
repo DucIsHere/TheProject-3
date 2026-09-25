@@ -19,7 +19,8 @@ file(GLOB_RECURSE SOURCES
 # 4. Tạo file thực thi từ các file nguồn vừa quét được
 add_executable(${PROJECT_NAME} ${SOURCES}
         TheProject-C/src/thread/threads/pool/ThreadPool.c
-        TheProject-C/src/thread/threads/pool/PrivatizedThreadPool.h)
+        TheProject-C/src/thread/threads/pool/PrivatizedThreadPool.h
+        TheProject-C/src/thread/threads/pool/PrivatizedThrreadPool.c)
 
 # 5. Khai báo các thư mục include
 target_include_directories(${PROJECT_NAME} PRIVATE
