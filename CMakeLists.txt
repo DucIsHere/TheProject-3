@@ -20,7 +20,9 @@ file(GLOB_RECURSE SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES}
         TheProject-C/src/thread/threads/pool/ThreadPool.c
         TheProject-C/src/thread/threads/pool/PrivatizedThreadPool.h
-        TheProject-C/src/thread/threads/pool/PrivatizedThrreadPool.c)
+        TheProject-C/src/thread/threads/pool/PrivatizedThrreadPool.c
+        TheProject-C/src/thread/worker/PCore.h
+        TheProject-C/src/thread/worker/ECore.c)
 
 # 5. Khai báo các thư mục include
 target_include_directories(${PROJECT_NAME} PRIVATE

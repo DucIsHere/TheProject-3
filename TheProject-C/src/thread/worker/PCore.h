@@ -1,47 +1,49 @@
-#pragma once 
+#pragma once
 
-#include <threads.h>
-#include <stddef.h>
+#include <stddef,h>
 #include <stdint.h>
-#include <stdfloat.h>
 #include <stdbool.h>
 #include <stdatomic.h>
-#include <immintrin.h>
 
-#include "threads/pool/ThreadPool.h"
+#include "threads\pool\ThreadPool.h"
+#include "threads\pool\PrivatizedThreadPool.h"
 
-#if defined(__GUNC__) || defined(__clang__)
-#define PCORE_INLINE inline __attribute__((always_inline))
-#define PCORE_RESTRICT __restrict__
-#else
-#define PCORE_INLINE inline
-#define PCORE_RESTRICT __restrict__
+#if defined(__GNUC__) || defined(__clang__)
+#define ECORE_INLINE inline __attribute__((always_inline))
+#define ECORE_RESTRICT __restrict
+#endif
+#define ECORE_INLINE inline
+#define ECORE_RESTRICT restrict
 #endif
 
-typedef struct alignas(CACHE_LINE) PCoreDAGGraph
-{
-     TaskHandle** tasks;
-     size_t task_count; 
-     size_t capacity;
-     Thrd* pool;
-} PCoreDAGGraph;
+typedef struct ECoreFFIContext ECoreFFIContext;
 
-[[nodiscard]] PCoreDAGGraph* pcore_dag_create(Thrd* pool, size_t initial_capacity);
-TaskHandle* pcore_dag_add_node(PCoreDAGGraph* graph, TaskFunc func, void* arg, TaskPriority prio);
-bool pcore_dag_add_edge(TaskHandle* parent_task, TaskHandle* child_task);
+struct alignas(CACHE_LINE_SIZE) ECoreFFIContext {
+    void* java_raw_in;
+    void* java_raw_out;
+    void* pcore_aligned_in;
+    void* pcore_aligned_out;
+    size_t element_count;
+    size_t element_size;
+    _Atomic(uint32_t) status;
+} ECoreFFIContext;
 
-void pcore_dag_submit(PCoreDAGGraph* graph, _Atomic(size_t)* counter);
-void pcore_dag_destroy(PCoreDAGGraph* graph);
-void pcore_dag_wait_and_spin(Thrd* pool, _Atomic(size_t)* counter);
+// Khởi tạo ngữ cảnh FFI Bridge từ Java MemorySegment
+[[nodiscard]] ECoreFFIContext* ecore_ffi_create_context(void* java_in, void* java_out, size_t count, size_t elem_size);
 
-void pcore_set_thread_affinity(size_t thread_id);
-void pcore_execute_direct_chain(TaskHandle* start_task);
-void pcore_dag_submit_batch(PCoreDAGGraph* graph, _Atomic(size_t)* counter);
-TaskHandle* pcore_spin_fetch_task(Thrd* pool);
+// Giải phóng ngữ cảnh FFI Bridge
+void ecore_ffi_destroy_context(ECoreFFIContext* ctx);
 
-// Active Hardware Spin Hint
-PCORE_INLINE static void pcore_spin_pause(uint32_t iterations) {
-    for (uint32_t i = 0; i < iterations; ++i) {
-        _mm_pause();
-    }
+// Ép Thread Affinity cho E-Core (Các luồng từ 16 đến 23)
+void ecore_set_thread_affinity(size_t thread_id);
+
+// Submit Task E-Core trực tiếp vào PrivatizedThreadPool (Fast-Path)
+void ecore_submit_prepare_privatized(PrivatizedThreadPool* pool, ECoreFFIContext* ctx, TaskPriority prio);
+void ecore_submit_finish_privatized(PrivatizedThreadPool* pool, ECoreFFIContext* ctx, TaskPriority prio);
+
+// Trực tiếp căn chỉnh bộ nhớ 64-byte trên RAM
+ECORE_INLINE static void* ecore_align_pointer(void* raw_ptr, size_t alignment) {
+    uintptr_t addr = (uintptr_t)raw_ptr;
+    uintptr_t aligned = (addr + (alignment - 1)) & ~(alignment - 1);
+    return (void*)aligned;
 }
