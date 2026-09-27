@@ -629,3 +629,8 @@ void pool_submit_ffi_dag_pipeline(Thrd* pool, FFIBridgeContext* ffi_ctx, TaskFun
     pool_submit_task(prep_task, counter, NULL);
     pool_submit_task(comp_task, counter, NULL);
 }
+
+void pool_pop_task(Thrd* pool, TaskHandle* out_handle) {
+    if (!pool || !out_handle) return false;
+    return false;
+}

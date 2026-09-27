@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdatomic.h>
+#include <stdalign.h>
 
 // ============================================================================
 // OS DETECT & NATIVE HEADERS INCLUSION
@@ -25,7 +26,7 @@
     #include <sys/futex.h>
     #include <linux/futex.h>
 #else
-    #error "Platform không được hỗ trợ! Chỉ hỗ trợ Native Windows và Native Linux."
+    #error Platform unsupported.
 #endif
 
 // ============================================================================
@@ -62,6 +63,8 @@ constexpr size_t TOTAL_HARDWARE_CORES = 16;
 // Forward Declarations
 typedef struct Thrd Thrd;
 typedef struct TaskHandle TaskHandle;
+typedef struct DependencyNode DependencyNode;
+typedef struct FFIBridgeContext FFIBridgeContext;
 
 // ============================================================================
 // ENUMS & TYPEDEFS
@@ -127,11 +130,11 @@ typedef struct
      native_thread_id_t os_tid;
 } ThreadInfo;
 
-typedef struct DependencyNode
+struct DependencyNode
 {
      TaskHandle* task;
      struct DependencyNode* next;
-} DependencyNode;
+};
 
 typedef void* (*TaskFunc)(TaskHandle* self, void* arg);
 
@@ -155,12 +158,14 @@ struct alignas(CACHE_LINE) TaskHandle
      Thrd* pool;
 };
 
-typedef struct
+typedef struct Task Task;
+
+typedef struct Task
 {
      void (*function)(void* args);
      void* args;
      _Atomic(size_t)* counter;
-} Task;
+};
 
 typedef struct
 {
@@ -168,21 +173,23 @@ typedef struct
      TaskHandle* task;
 } QueueCell;
 
-typedef struct alignas(CACHE_LINE)
+typedef struct alignas(CACHE_LINE) FFIBridgeContext
 {
      void* java_in_buffer;
      void* java_out_buffer;
      void* pcore_aligned_ptr;
      size_t data_size;
      uint32_t flags;
-} FFIBridgeContext;
+};
 
-typedef struct alignas(CACHE_LINE)
+typedef struct MPMCQueue MPMCQueue;
+
+struct alignas(CACHE_LINE) MPMCQueue
 {
      QueueCell ring[TASK_QUEUE_CAPACITY];
      _Atomic size_t head;
      _Atomic size_t tail;
-} MPMCQueue;
+};
 
 typedef struct
 {
@@ -301,3 +308,5 @@ void pool_submit_ffi_dag_pipeline(Thrd* pool, FFIBridgeContext* ffi_ctx, TaskFun
 
 void pool_pde_parallel(Thrd* pool, size_t total_element, ParallelFunc func, void* user_data);
 void pool_pde_barrier(ParallelRange* range);
+
+void pool_pop_task(Thrd* pool, TaskHandle* out_handle);
