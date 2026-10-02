@@ -22,7 +22,10 @@ add_executable(${PROJECT_NAME} ${SOURCES}
         TheProject-C/src/thread/threads/pool/PrivatizedThreadPool.h
         TheProject-C/src/thread/worker/PCore.h
         TheProject-C/src/thread/threads/pool/PrivatizedThreadPool.c
-        TheProject-C/src/thread/worker/ECore.h)
+        TheProject-C/src/thread/worker/ECore.h
+        TheProject-C/src/density/tile/SIze.h
+        TheProject-C/src/cell/Cell.h
+)
 
 # 5. Khai báo các thư mục include
 target_include_directories(${PROJECT_NAME} PRIVATE
