@@ -39,8 +39,8 @@ public final class RGFLanguageProvider {
 			this.add(RGFTranslationKeys.GUI_MISCELLANEOUS_SETTINGS_TITLE, "Miscellaneous Settings");
 
 			this.add(RGFTranslationKeys.GUI_BUTTON_TRUE, "true");
-this.add(RGFTranslationKeys.GUI_BUTTON_FALSE, "false");
-this.add(RGFTranslationKeys.GUI_BUTTON_CREATE, "Create");
+            this.add(RGFTranslationKeys.GUI_BUTTON_FALSE, "false");
+            this.add(RGFTranslationKeys.GUI_BUTTON_CREATE, "Create");
 this.add(RGFTranslationKeys.GUI_BUTTON_COPY, "Copy");
 this.add(RGFTranslationKeys.GUI_BUTTON_DELETE, "Delete");
 this.add(RGFTranslationKeys.GUI_BUTTON_OPEN_PRESET_FOLDER, "Open Preset Folder");

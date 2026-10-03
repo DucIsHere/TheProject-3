@@ -20,14 +20,34 @@ public class Cell {
             ValueLayout.JAVA_FLOAT.withName("gradient"),
             ValueLayout.JAVA_FLOAT.withName("regionMoisture"),
             ValueLayout.JAVA_FLOAT.withName("regionTemperature"),
+            ValueLayout.JAVA_FLOAT.withName("continentId"),
+            ValueLayout.JAVA_FLOAT.withName("continentEdge"),
+            ValueLayout.JAVA_FLOAT.withName("terrainRegionId"),
+            ValueLayout.JAVA_FLOAT.withName("terrainRegionEdge"),
+            ValueLayout.JAVA_FLOAT.withName("biomeRegionId"),
+            ValueLayout.JAVA_FLOAT.withName("biomeRegionEdge"),
+            ValueLayout.JAVA_FLOAT.withName("macroBiomeId"),
+            ValueLayout.JAVA_FLOAT.withName("riverMask"),
+            ValueLayout.JAVA_INT.withName("continentX"),
+            ValueLayout.JAVA_INT.withName("continentZ"),
+            ValueLayout.JAVA_BOOLEAN.withName("erosionMask"),
+            MemoryLayout.paddingLayout(24), // Alignment padding (3 bytes)
+            ValueLayout.JAVA_FLOAT.withName("erosion"),
+            ValueLayout.JAVA_FLOAT.withName("weirdness"),
             ValueLayout.JAVA_FLOAT.withName("temperature"),
             ValueLayout.JAVA_FLOAT.withName("moisture"),
             ValueLayout.JAVA_FLOAT.withName("damage"),
-            ValueByteLayout.JAVA_BYTE.withName("erosionMask")
+            ValueLayout.JAVA_FLOAT.withName("beachNoise")
     );
 
-    public static final VarHandle HEIGHT = LAYOUT.varHandle(PathElement.groupElement("height"));
-    public static final VarHandle SEDIMENT = LAYOUT.varHandle(PathElement.groupElement("sediment"));
-    public static final VarHandle HEIGHT_EROSION = LAYOUT.varHandle(PathElement.groupElement("heightErosion"));
-    public static final VarHandle GRADIENT = LAYOUT.varHandle(PathElement.groupElement("gradient"));
+    public static final long HEIGHT = LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("height"));
+    public static final long SEDIMENT = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement("sediment"));
+    public static final long HEIGHT_EROSION = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement("heightErosion"));
+    public static final long GRADIENT = LAYOUT.ByteOffOffset(MemoryLayout.PathElement.groupElement("gradient"));
+    public static final long REGION_MOISTURE = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement("regionMoisture"));
+    public static final long REGION_TEMPERATURE = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement("regionTemperature"));
+    public static final long TEMPERATURE = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement("temperature"));
+    public static final long MOISTURE = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement("moisture"));
+    public static final long DAMAGE = LAYOUT.ByteOffset(MemoryLayout.PathElement.groupElement('damage'));
+
 }
