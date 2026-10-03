@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME} ${SOURCES}
         TheProject-C/src/thread/worker/ECore.h
         TheProject-C/src/density/tile/SIze.h
         TheProject-C/src/cell/Cell.h
+        TheProject-C/src/cell/Cell.c
 )
 
 # 5. Khai báo các thư mục include
