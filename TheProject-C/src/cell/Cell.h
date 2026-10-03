@@ -34,14 +34,6 @@ struct alignas(8) Cell {
     float temperature;
 } Cell;
 
-// Hàm tạo bộ nhớ SoA có Alignment cho SIMD
-Cell* cell_soa_create(int capacity);
-
-// Hàm giải phóng bộ nhớ
-void cell_soa_free(Cell* soa);
-
-// Hàm reset các giá trị về mặc định (Tương đương reset() bên Java)[cite: 7]
-void cell_soa_reset(Cell* soa);
-
-// Hàm reset 1 cell cụ thể theo index
-void cell_soa_reset_at(Cell* soa, int index);
+void cell_init_default(Cell* cell);
+void cell_copy(Cell* dest, const Cell* src);
+void cell_reset(Cell* cell);
