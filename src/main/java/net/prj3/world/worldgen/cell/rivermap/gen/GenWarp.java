@@ -3,7 +3,7 @@ package net.prj3.world.worldgen.cell.rivermap.gen;
 import net.prj3.world.worldgen.noise.domain.Domain;
 import net.prj3.world.worldgen.noise.domain.Domains;
 
-public class GenWarp(Domain lake, Domain river) {
+public record GenWarp(Domain lake, Domain river) {
     public static final GenWarp EMPTY = new GenWarp(Domains.direct(), Domains.direct());
 
     public static GenWarp make(int seed, int continentScale) {

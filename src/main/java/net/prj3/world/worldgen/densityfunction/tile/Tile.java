@@ -1,6 +1,7 @@
 package net.prj3.world.worldgen.densityfunction.tile;
 
 import java.util.Arrays;
+import java.lang.foreign.MemorySegment;
 
 import net.prj3.concurrent.Resource;
 import net.prj3.concurrent.cache.SafeCloseable;
@@ -9,31 +10,35 @@ import net.prj3.world.worldgen.cell.CellLookup;
 import net.prj3.world.worldgen.densityfunction.tile.filter.Filterable;
 
 public class Tile implements SafeCloseable, Filterable, CellLookup {
-	private int x, z;
-	private int chunkX, chunkZ;
+	private int x;
+    private int z;
+	private int chunkX;
+    private int chunkZ;
 	private int size;
 	private int border;
 	private Size blockSize;
 	private Size chunkSize;
-	private Resource<Cell[]> cacheResource;
-	private Resource<Chunk[]> chunkResource;
-	private Cell[] cache;
-	private Chunk[] chunks;
-	
-	public Tile(int x, int z, int size, int border, Size blockSize, Size chunkSize, Resource<Cell[]> cacheResource, Resource<Chunk[]> chunkResource) {
-		this.x = x;
-		this.z = z;
+
+    private final Resource<MemorySegment> cacheResource;
+    private final Resource<Chunk[]> chunkResource;
+
+    private final MemorySegment cacheSegment;
+    private final Chunk[] chunks;
+
+    public Tile(int x, int z, int size, int border, Size blockSize, Size chunkSize, Resource<MemorySegment> cacheResource, Resource<Chunk[]> chunkResource) {
+        this.x = x;
+        this.z = z;
         this.chunkX = x << size;
         this.chunkZ = z << size;
         this.size = size;
         this.border = border;
-		this.blockSize = blockSize;
-		this.chunkSize = chunkSize;
-		this.cacheResource = cacheResource;
-		this.chunkResource = chunkResource;
-		this.cache = cacheResource.get();
-		this.chunks = chunkResource.get();
-	}
+        this.blockSize = blockSize;
+        this.chunkSize = chunkSize;
+        this.cacheResource = cacheResource;
+        this.chunkResource = chunkResource;
+        this.cacheSegment = cacheResource.get();
+        this.chunks = chunkResource.get();
+    }
 	
 	public int getX() {
 		return this.x;
@@ -96,24 +101,42 @@ public class Tile implements SafeCloseable, Filterable, CellLookup {
 	}
 
 	@Override
-	public Cell[] getBacking() {
-		return this.cache;
+	public long getBacking() {
+		return this.cacheSegment;
 	}
 
-	@Override
-	public Cell getCellRaw(int x, int z) {
-		int index = Tile.this.blockSize.indexOf(x, z);
-        if (index < 0 || index >= Tile.this.blockSize.arraySize()) {
+    @Override
+    public long getAddress() {
+        return this.cacheSegment.address();
+    }
+
+    @Override
+    public Cell lookup(int blockX, int blockZ) {
+        int borderVal = this.blockSize.border();
+        int relBlockX = borderVal + this.blockSize.mask(blockX);
+        int relBlockZ = borderVal + this.blockSize.mask(blockZ);
+        int idx = this.blockSize.indexOf(relBlockX, relBlockZ);
+        return new Cell(getCellSegment(idx));
+    }
+
+    @Override
+    public MemorySegment setCellSegment(int index) {
+        long offset = index *  Cell.LAYOUT.byteSize();
+        return this.cacheSegment.asSlice(offset, Cell.LAYOUT.byteSize());
+    }
+
+    @Override
+    public Cell getCellRaw(int x, int z) {
+        int index = this.blockSize.indexOf(x, z);
+        if (index < 0 || index >= this.blockSize.arraySize()) {
             return Cell.empty();
         }
-        return Tile.this.cache[index];
-	}
+        return new Cell(getCellSegment(index));
+    }
 
 	@Override
 	public void close() {
-        for (Cell cell : this.cache) {
-        	cell.reset();
-        }
+        this.cacheSegment.fill((byte) 0);
         Arrays.fill(this.chunks, null);
 		this.cacheResource.close();
 		this.chunkResource.close();
@@ -135,37 +158,27 @@ public class Tile implements SafeCloseable, Filterable, CellLookup {
         private int blockZ;
         private int regionBlockX;
         private int regionBlockZ;
-		
-		public Chunk(int regionChunkX, int regionChunkZ) {
-            this.regionBlockX = regionChunkX << 4;
-            this.regionBlockZ = regionChunkZ << 4;
-            this.chunkX = Tile.this.chunkX + regionChunkX - Tile.this.border;
-            this.chunkZ = Tile.this.chunkZ + regionChunkZ - Tile.this.border;
-            this.blockX = this.chunkX << 4;
-            this.blockZ = this.chunkZ << 4;
-		}
-		
-        public int getChunkX() {
-            return this.chunkX;
-        }
-        
-        public int getChunkZ() {
-            return this.chunkZ;
-        }
-        
-        public int getBlockX() {
-            return this.blockX;
-        }
-        
-        public int getBlockZ() {
-            return this.blockZ;
-        }
-        
-        public Cell getCell(int blockX, int blockZ) {
-            int relX = this.regionBlockX + (blockX & 0xF);
-            int relZ = this.regionBlockZ + (blockZ & 0xF);
-            int index = Tile.this.blockSize.indexOf(relX, relZ);
-            return Tile.this.cache[index];
+
+        public class Chunk {
+            private final int chunkX, chunkZ;
+            private final int blockX, blockZ;
+            private final int regionBlockX, regionBlockZ;
+
+            public Chunk(int regionChunkX, int regionChunkZ) {
+                this.regionBlockX = regionChunkX << 4;
+                this.regionBlockZ = regionChunkZ << 4;
+                this.chunkX = Tile.this.chunkX + regionChunkX - Tile.this.border;
+                this.chunkZ = Tile.this.chunkZ + regionChunkZ - Tile.this.border;
+                this.blockX = this.chunkX << 4;
+                this.blockZ = this.chunkZ << 4;
+            }
+
+            public MemorySegment getCellSegment(int blockX, int blockZ) {
+                int relX = this.regionBlockX + (blockX & 0xF);
+                int relZ = this.regionBlockZ + (blockZ & 0xF);
+                int index = Tile.this.blockSize.indexOf(relX, relZ);
+                return Tile.this.getCellSegment(index);
+            }
         }
 	}
 }

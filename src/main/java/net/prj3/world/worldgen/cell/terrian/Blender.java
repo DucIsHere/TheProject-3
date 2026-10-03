@@ -46,9 +46,10 @@ public class Blender implements CellPopulator {
 		float upperHeight = cell.height;
 		float upperErosion = cell.erosion;
 		float upperWeirdness = cell.weirdness;
-		cell.height = NoiseUtil.lerp(lowerHeight, upperHeight, alpha);
-		cell.erosion = NoiseUtil.lerp(lowerErosion, upperErosion, alpha);
-		cell.weirdness = NoiseUtil.lerp(lowerWeirdness, upperWeirdness, alpha);
+
+		cell.setHeight(NoiseUtil.lerp(lowerHeight, upperHeight, alpha));
+		cell.setErosion(NoiseUtil.lerp(lowerErosion, upperErosion, alpha));
+		cell.setWeirdness(NoiseUtil.lerp(lowerWeirdness, upperWeirdness, alpha);
 		if (select < this.midpoint) {
 			cell.terrain = lowerType;
 		}

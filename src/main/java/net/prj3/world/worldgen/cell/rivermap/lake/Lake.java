@@ -42,7 +42,7 @@ public class Lake {
         }
         float bankHeight = this.getBankHeight(cell);
         if (distance2 <= this.lakeDistance2) {
-            cell.height = Math.min(bankHeight, cell.height);
+            cell.height(Math.min(bankHeight, cell.height));
             if (distance2 < this.lakeDistance2) {
                 float depthAlpha = 1.0F - distance2 / this.lakeDistance2;
                 if (depthAlpha < 0.0F) {
@@ -51,13 +51,13 @@ public class Lake {
                     depthAlpha = 1.0F;
                 }
                 float lakeDepth = Math.min(cell.height, this.depth);
-                cell.height = NoiseUtil.lerp(cell.height, lakeDepth, depthAlpha);
+                cell.height(NoiseUtil.lerp(cell.height, lakeDepth, depthAlpha));
                 cell.terrain = TerrainType.LAKE;
-                cell.riverMask = Math.min(cell.riverMask, 1.0F - depthAlpha);
+                cell.riverMask(Math.min(cell.riverMask, 1.0F - depthAlpha));
             }
             return;
         }
-        if (cell.height < bankHeight) {
+        if (cell.height() < bankHeight) {
             return;
         }
 
