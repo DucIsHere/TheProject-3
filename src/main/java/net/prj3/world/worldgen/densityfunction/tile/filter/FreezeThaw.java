@@ -11,6 +11,8 @@ import net.prj3.world.worldgen.heightmap.Levels;
 import net.prj3.world.worldgen.util.FastRandom;
 import net.prj3.world.worldgen.noise.NoiseUtil;
 
+import java.lang.foreign.MemorySegment;
+
 public class FreezeThaw extends Filter {
     private final int mapSize;
     private final int seed;

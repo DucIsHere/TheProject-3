@@ -26,7 +26,8 @@ add_executable(${PROJECT_NAME} ${SOURCES}
         TheProject-C/src/density/tile/SIze.h
         TheProject-C/src/cell/Cell.h
         TheProject-C/src/cell/Cell.c
-        TheProject-C/src/density/tile/Tile.h
+        TheProject-C/src/density/filter/FreezeThaw.h
+        TheProject-C/src/density/filter/FreezeThaw.c
 )
 
 # 5. Khai báo các thư mục include

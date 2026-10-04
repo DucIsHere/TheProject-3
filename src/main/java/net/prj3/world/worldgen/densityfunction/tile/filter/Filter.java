@@ -1,6 +1,8 @@
 package net.prj3.world.worldgen.densityfunction.tile.filter;
 
 import net.prj3.world.worldgen.cell.Cell;
+import jdk.incubator.foreign.MemorySegment;
+import java.lang.invoke.MethodHandle;
 
 public interface Filter {
 	void apply(Filterable map, int regionX, int regionZ, int iterationsPerChunk);
