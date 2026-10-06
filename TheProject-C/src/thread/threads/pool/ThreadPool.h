@@ -65,6 +65,7 @@ typedef struct Thrd Thrd;
 typedef struct TaskHandle TaskHandle;
 typedef struct DependencyNode DependencyNode;
 typedef struct FFIBridgeContext FFIBridgeContext;
+typedef struct ParallelRange ParallelRange;
 
 // ============================================================================
 // ENUMS & TYPEDEFS
@@ -199,14 +200,14 @@ typedef struct
      size_t total_thread;
 } Barrier;
 
-typedef struct
+struct ParallelRange
 {
      size_t start_idx;
      size_t end_idx;
      size_t thread_id;
      void* user_data;
      Thrd* pool;
-} ParallelRange;
+};
 
 typedef void (*ParallelFunc)(ParallelRange* range);
 

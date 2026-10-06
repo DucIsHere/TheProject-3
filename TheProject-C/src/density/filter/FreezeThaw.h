@@ -1,19 +1,21 @@
 #pragma once
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdalign.h>
 #include <float.h>
+#include <stdalign.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "thread/threads/pool/ThreadPool.h"
-#include "cell/Cell.h"
+#include ".../thread/threads/pool/ThreadPool.h"
+#include ".../cell/Cell.h"
+#include ".../include/math/NoiseUtil.h"
 
 typedef struct FreezeThaw FreezeThaw;
 typedef struct TerrainPos TerrainPos;
 typedef struct FreezeThawTaskContext FreezeThawTaskContext;
+typedef struct TerrainPos TerrainPos;
 
 struct FreezeThaw {
     // 1. Physical Constants
@@ -44,6 +46,7 @@ struct FreezeThaw {
     float sedimentCapacity;  // 0.02f
 
     // 3. Brush Memory Pointers (Flattened 1D arrays từ Java)
+    TerrainPos* positions;
     int32_t mapSize;
     int32_t totalCells;
     int32_t* brushIndices;   // Flattened array erosionBrushIndices
@@ -60,6 +63,12 @@ struct FreezeThawTaskContext {
     int32_t regionX;
     int32_t regionZ;
     int32_t iterationPerChunks;
+
+    int32_t blockX;
+    int32_t blockZ;
+    int32_t width;
+    int32_t height;
+    int32_t border;
 };
 
 struct alignas(32) TerrainPos {
@@ -70,18 +79,18 @@ struct alignas(32) TerrainPos {
 };
 
 FreezeThaw* c23_create_config(
-    int32_t mapSize,
-    float porosity,
-    float tensileStrength,
-    float criticalSaturation,
-    float softeningFactor,
-    float freezeThawCycles,
-    float breakAmount,
-    float zAmountDepth,
-    float dDampingDepth,
-    const int32_t* brushIndices,
-    const float* brushWeights,
-    const int32_t* brushSizes
+    Thrd* pool,
+    FreezeThawConfig* config,
+    Cell* cells,
+    float* scratchDamageMap,
+    float* scratchMoistureMap,
+    int32_t blockX,          // Lấy từ tile.getBlockX()
+    int32_t blockZ,          // Lấy từ tile.getBlockZ()
+    int32_t width,           // Lấy từ tile.getBlockSize().width()
+    int32_t height,          // Lấy từ tile.getBlockSize().height()
+    int32_t border,          // Lấy từ tile.getBlockSize().border()
+    uint64_t seed,
+    int32_t iterationsPerChunk
 );
 
 void c23_free_config(FreezeThaw* conf);

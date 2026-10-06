@@ -1,7 +1,7 @@
 package net.prj3.world.worldgen.densityfunction.tile;
 
 import java.util.Arrays;
-import java.lang.foreign.MemorySegment;
+import jdk.incubator.foreign.MemorySegment;
 
 import net.prj3.concurrent.Resource;
 import net.prj3.concurrent.cache.SafeCloseable;

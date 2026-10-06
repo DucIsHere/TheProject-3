@@ -95,7 +95,7 @@ public class FreezeThaw extends Filter {
         for (int i = 0; i < total; i++) {
             int x = i % width;
             int z = i / width;
-            float noise = NoiseUtil.oerlin2D(x, z, seed, 0.5F);
+            float noise = NoiseUtil.perlin2D(x, z, seed, 0.5F);
             moistureMap[i] = Math.clamp(0.4F + (noise * 0.5F), 0.1F, 1.0F);
         }
 
