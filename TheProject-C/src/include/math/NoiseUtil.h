@@ -28,6 +28,10 @@ static inline float abs(float x)
     return x < 0 ? -x : x;
 }
 
+static inline int64_t seed(int x, int z) {
+    return ((int64_t)x & 0xFFFFFFFFL) | ((int64_t)z & 0xFFFFFFFFL) << 32;
+}
+
 static inline float div(int32_t num, int32_t denom)
 {
     return num / (float)denom;

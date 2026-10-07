@@ -1,5 +1,7 @@
 #include "FreezeThaw.h"
 
+#include "../../include/math/NoiseUtil.h"
+
 FreezeThaw* c23_create_config(
     int32_t mapSize,
     float porosity,
@@ -77,6 +79,29 @@ FreezeThaw* c23_create_config(FreezeThaw* cfg) {
     cfg->positions = (TerrainPos*)malloc(cfg->totalCells * sizeof(TerrainPos));
 }
 
+static inline void apply_freeze_thaw_cycle(
+    float posX, float posZ,
+    FreezeThawTaskContext* ctx,
+    TerrainPos* g1, TerrainPos* g2
+) {
+    int32_t ix = (int32_t)posX;
+    int32_t iz = (int32_t)posZ;
+    if (ix < 0 || ix >= ctx->width || iz < 0 || iz >= ctx->height) return;
+
+    int32_t index = iz * ctx->width + ix;
+    Cell* cell = &ctx->cells[index];
+
+    // Tính toán độ ẩm, nhiệt độ và sát thương theo Slider freezeThawCycles
+    float moisture = ctx->moistureMap[index];
+    float temp = cells->height * -0.0065f + 0.5f;
+
+    if (moisture > 0.3f && temp < 0.0f) {
+        float damageDelta = moisture * 0.05f * ctx->config->freezeThawCycles;
+        ctx->damageMap[index] += damageDelta;
+        cells->height -= damageDelta; // Cập nhật trực tiếp Off-Heap Cell
+    }
+}
+
 static void freeze_thaw_pde_worker(ParallelRange* range) {
     FreezeThawTaskContext* ctx = (FreezeThawTaskContext*)range->user_data;
     FreezeThaw* cfg = ctx->config;
@@ -84,12 +109,37 @@ static void freeze_thaw_pde_worker(ParallelRange* range) {
     int32_t mapSize = cfg->mapSize;
     int32_t width = cfg->width;
 
+    uint64_t rngState = ctx->seed + range->start_idx;
+
+    TerrainPos gradients1 = {0.0f, 0.0f, 0.0f};
+    TerrainPos gradients2 = {0.0f, 0.0f, 0.0f};
+
+    FastRandom random;
+
+    for (int32_t i = 0; i < ctx->iterations; ++i) {
+        uint64_t interationSeed = seed(ctx->seed + 1);
+        for (size_t cz = range->start_idx; cz < range->end_idx; ++cz) {
+            int32_t relZ = (int32_t)cz << 3;
+            int32_t seedZ = ctx->chunkZ + (int32_t)cz - ctx->borderChunk;
+            for (int32_t cx = 0; cx < ctx0>lengthChunk; ++cx) {
+                int32_t relX = cx << 3;
+                int32_t seedX = ctx->chunkX + cx - ctx->borderChunk;
+                uint64_t chunkSeed = seed(seedX, seedZ);
+
+                float posX = (float)(relX + fr_next_int(16));
+                float posZ = (float)(relZ + fr_next_int(16));
+
+                apply_free_thaw_cycle();
+            }
+        }
+    }
+
     for (size_t i = range->start_idx; i < range->end_idx; i++) {
         int32_t gridX = (int32_t)(i % mapSize);
         int32_t gridZ = (int32_t)(i / mapSize);
 
         float worldX = (float)(ctx->regionX * mapSize + gridX);
-        float worldY = cells[i].height;
+        float worldY = cell[i].height;
         float worldZ = (float)(ctx->regionZ *mapSize + gridZ);
 
         if (worldY < cfg->snowLine) {
@@ -130,4 +180,14 @@ void c23_apply_freeze_thaw_fast(
     for (int iter = 0; iter < iterationsPerChunk; iter++) {
         pool_pde_parallel(pool, config->totalCells, freeze_thaw_pde_worker, &ctx);
     }
+}
+
+static inline void appy_freeze_thaw_math(size_t index, FreezeThawTaskContext* ctx, uint64_t* rngState) {
+    FreezeThaw* cfg = ctx->config;
+    Cell* cells = &cfg->cells[index];
+    int32_t width = ctx->width;
+
+    int32_t lx = (int32_t)(index % width);
+    int32_t lz = (int32_t)(index / width);
+
 }

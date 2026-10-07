@@ -1,7 +1,7 @@
 #ifndef NOISE_UTIL_C
 #define NOISE_UTIL_C
 
-#include "math/NoiseUtil.h"
+#include "NoiseUtil.h"
 
 #include <math.h>
 
@@ -9,7 +9,6 @@
 Vec2f CELL_2D[256];
 Vec2f GRAD_2D[8];         // Đồng bộ đúng kích thước mảng Perlin cơ bản từ Java
 Vec2f GRAD_2D_24[32];     // Mảng 32 hướng nâng cao cho hàm coord2D_24
-float SIN[SIN_COUNT];
 
 /**
  * HÀM TIẾP TẾ TOÀN DIỆN: Nhận các dải dữ liệu duỗi phẳng float[] từ Java qua Panama FFI

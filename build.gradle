@@ -88,3 +88,11 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['--add-modules', 'jdk.incubator.foreign']
+}
+
+application {
+    applicationDefaultJvmArgs = ['--add-modules=jdk.incubator.foreign']
+}

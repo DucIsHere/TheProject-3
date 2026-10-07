@@ -11,6 +11,7 @@
 #include ".../thread/threads/pool/ThreadPool.h"
 #include ".../cell/Cell.h"
 #include ".../include/math/NoiseUtil.h"
+#include ".../include/util/FastRandom.h"
 
 typedef struct FreezeThaw FreezeThaw;
 typedef struct TerrainPos TerrainPos;
@@ -71,7 +72,7 @@ struct FreezeThawTaskContext {
     int32_t border;
 };
 
-struct alignas(32) TerrainPos {
+struct TerrainPos {
     float x;
     float y;
     float z;
