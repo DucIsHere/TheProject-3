@@ -11,12 +11,20 @@
 #include ".../thread/threads/pool/ThreadPool.h"
 #include ".../cell/Cell.h"
 #include ".../include/math/NoiseUtil.h"
-#include ".../include/util/FastRandom.h"
+#include ",,,/include/math/Interpolation.h"
+#include ".../include/math/extern/InterpolationFast.h"
+#include ".../include/util/FastRandom.h
+#include ".../density/Modifier.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif"
 
 typedef struct FreezeThaw FreezeThaw;
 typedef struct TerrainPos TerrainPos;
 typedef struct FreezeThawTaskContext FreezeThawTaskContext;
 typedef struct TerrainPos TerrainPos;
+typedef struct Brushes Brushes;
 
 struct FreezeThaw {
     // 1. Physical Constants
@@ -53,6 +61,8 @@ struct FreezeThaw {
     int32_t* brushIndices;   // Flattened array erosionBrushIndices
     float* brushWeights;     // Flattened array erosionBrushWeights
     int32_t* brushSizes;     // Số lượng phần tử brush của từng Cell
+    int32_t* brushOffset;
+    Modifier modifier;
 };
 
 struct FreezeThawTaskContext {
@@ -70,6 +80,9 @@ struct FreezeThawTaskContext {
     int32_t width;
     int32_t height;
     int32_t border;
+
+    float* damageMap;
+    float* moistureMap;
 };
 
 struct TerrainPos {
@@ -77,6 +90,13 @@ struct TerrainPos {
     float y;
     float z;
     float _padding[3];
+};
+
+struct Brushes {
+    int32_t* xOffset;
+    int32_t* yOffset;
+    float* weights;
+    int radius;
 };
 
 FreezeThaw* c23_create_config(

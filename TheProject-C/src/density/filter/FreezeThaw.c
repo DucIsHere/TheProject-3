@@ -1,5 +1,6 @@
 #include "FreezeThaw.h"
 
+#include "../../cell/cell.h"
 #include "../../include/math/NoiseUtil.h"
 
 FreezeThaw* c23_create_config(
@@ -14,7 +15,14 @@ FreezeThaw* c23_create_config(
     float dDampingDepth,
     const int32_t* brushIndices,
     const float* brushWeights,
-    const int32_t* brushSizes
+    const int32_t* brushSizes,
+    const int32_t xOffset,
+    const int32_t yOffset,
+    const float weights,
+    Modifier modifier,
+    float modMin,
+    float modMax,
+    bool modInterted
 ) {
     FreezeThaw* cfg = (FreezeThaw*)malloc(sizeof(FreezeThaw));
     if (!cfg) return NULL;
@@ -49,11 +57,17 @@ FreezeThaw* c23_create_config(
     cfg->mapSize = mapSize;
     cfg->totalCells = mapSize * mapSize;
 
+    cfg->modifier = modifier_range(modMin, modMax);
+    if (modInverted) {
+        cfg->modifier = modifier_invert(cfg->modifier);
+    }
+
     // Copy bộ nhớ Brush sang Native Heap
     size_t maxBrushEntries = (size_t)cfg->totalCells * 25; // Tối đa 25 neighbors/cell
     cfg->brushIndices = (int32_t*)malloc(maxBrushEntries * sizeof(int32_t));
     cfg->brushWeights = (float*)malloc(maxBrushEntries * sizeof(float));
     cfg->brushSizes = (int32_t*)malloc(cfg->totalCells * sizeof(int32_t));
+    cfg->brushOffset = (int32_t*)malloc(cfg->totalCells * sizeof(int32_t));
 
     if (brushIndices) memcpy(cfg->brushIndices, brushIndices, maxBrushEntries * sizeof(int32_t));
     if (brushWeights) memcpy(cfg->brushWeights, brushWeights, maxBrushEntries * sizeof(float));
@@ -68,6 +82,7 @@ void c23_free_config(FreezeThaw* config) {
         if (config->brushIndices) free(config->brushIndices);
         if (config->brushWeights) free(config->brushWeights);
         if (config->brushSizes) free(config->brushSizes);
+        if (config->brushOffset) free(config->brushOffset);
         free(config);
     }
 }
@@ -129,7 +144,7 @@ static void freeze_thaw_pde_worker(ParallelRange* range) {
                 float posX = (float)(relX + fr_next_int(16));
                 float posZ = (float)(relZ + fr_next_int(16));
 
-                apply_free_thaw_cycle();
+                apply_free_thaw_cycle(posX, posZ, ctx, &gradients1, &gradients2);
             }
         }
     }
@@ -162,7 +177,9 @@ void c23_apply_freeze_thaw_fast(
     int32_t height,
     int32_t border,
     uint64_t seed,
-    int32_t iterationsPerChunk
+    int32_t iterationsPerChunk,
+    float damageMap,
+    float moistureMap
 ) {
     // Đóng gói thông số Tile vào context để truyền cho Worker Threads
     FreezeThawTaskContext ctx = {
@@ -174,7 +191,9 @@ void c23_apply_freeze_thaw_fast(
         .blockZ = blockZ,
         .width = width,
         .height = height,
-        .border = border
+        .border = border,
+        .damageMap = damageMap,
+        .moistureMap = moistureMap
     };
 
     for (int iter = 0; iter < iterationsPerChunk; iter++) {
@@ -182,12 +201,120 @@ void c23_apply_freeze_thaw_fast(
     }
 }
 
-static inline void appy_freeze_thaw_math(size_t index, FreezeThawTaskContext* ctx, uint64_t* rngState) {
+static inline void freeze_thaw_particle(float posX, float posZ, FreezeThawTaskContext* ctx, TerrainPos* gradients1, TerrainPos* gradients2) {
     FreezeThaw* cfg = ctx->config;
-    Cell* cells = &cfg->cells[index];
+    Cell* cells = ctx->cells;
     int32_t width = ctx->width;
 
-    int32_t lx = (int32_t)(index % width);
-    int32_t lz = (int32_t)(index / width);
+    float dirX = 0.0f;
+    float dirZ = 0.0f;
+    float sediment = 0.0f;
 
+    for (int32_t lifeTime = 0; lifeTime < cfg->freezeThawCycles; ++lifeTime) {
+        int32_t nodeX = (int32_t)posX;
+        int32_t nodeZ = (int32_t)posZ;
+
+        int32_t idx = nodeZ * width + nodeX;
+
+        if (idx < 0 || idx >= ctx->currentMapSize || cells[idx].erosion_mask) return;
+
+        Cell* currentCell = &cells[idx];
+        float cellHeight = currentCell->height;
+        float cellGrad = currentCell->gradient;
+
+        float cellOffsetX = posX - nodeX;
+        float cellOffsetZ = posZ - nodeZ;
+
+        float tMean = 8.0f - (cellHeight - cfg->snowLine);
+        float omega = (float) (2 * M_PI / cfg->freezeThawCycles);
+        float zd = cfg->zAmountDepth / cfg->dDampingDepth;
+        float damping = (float)ip_exp2(-zd);
+        float currentTemp = tMean + (14.0F * damping * (float) ip_cos(omega * lifeTime -zd));
+
+        if (currentTemp < 0) {
+            float pMaxTemp = -(cfg->clapeyronFactor) * currentTemp;
+            float suctionPotential = pMaxTemp;
+            float Kh = 0.004f * cfg->porosity;
+            float fluxQ = Kh * suctionPotential * (1.0f - ctx->moisetureMap[idx]);
+            ctx->moisetureMap[idx] = min(1.0f, ctx->moisetureMap[idx] + fluxQ);
+
+            dirX = dirX * 0.1f - cellGrad * 0.5f;
+            dirZ = dirZ * 0.1f - cellGrad * 0.5f;
+
+            //Attention: ipf_sqrt2() function has a lot of error approximate
+            float len = (float)ipf_sqrt2(dirX * dirX + dirZ * dirZ);
+
+            if (len > 0.0f) {
+                dirX /= len;
+                dirZ /= len;
+            }
+
+            posX += dirX;
+            posZ += dirZ;
+
+            if (posX < 1.0f || posX >= (float)(width - 1) || posZ < 1.0f || posZ >= (float)(height - 1)) return;
+
+            int32_t newIdx = ((int32_t)posZ) * width + ((int32_t)posX);
+            float  deltaHeight = cells[newIdx].height - cellHeight;
+
+            float pMax = 0.0f;
+
+            if (currentTemp < 0 && moistureMap[idx] > cfg->criticalSaturation) {
+                pMax = (-(cfg->clapeyronFactor * currentTemp)) * moistureMap[idx];
+            }
+
+            if (pMax > 0.0f) {
+                float pRatio = pMax / cfg->tensileStrength;
+                if (pRatio > 0.1f) {
+                    float currentD = ctx->damageMap[idx];
+                    float oneMinusD = max(0.01f, 1.0f - currentD);
+                    float deltaD = (float)(ip_powf(pRatio, mExponent) * ip_powf(oneMinusD, -(cfg->nExponent))) * 0.05f;
+                }
+            }
+            if (ctx->damageMap[idx] >= 0.85f) {
+                float amountToErode = min(sedimentCapacity * cfg->softeningFactor, cfg->breakAmount);
+                int32_t brushStart = cfg->brushOffset[idx];
+                int32_t brushSize = cfg->brushSizes[idx];
+                for (int b = 0; b < brushSize; ++b) {
+                    int32_t nodeIndex = cfg->brushIndices[brushStart + b];
+                    float brushWeight = cfg->brushWeights[brushStart + b];
+                    float weightErodeAmount = amountToErode * brushWeight;
+
+                    if (!cells[nodeIndex].erosion_mask) {
+                        float deltaSediment = modifier_modify(&cfg->modifier, &cells[nodeIndex], weightErodeAmount);
+                        cells[nodeIndex].height -= deltaSediment;
+                        cells[nodeIndex].heightErosion -= deltaSediment;
+                        sediment += deltaSediment;
+                    }
+                }
+
+                ctx->damageMap[idx] = 0.05f;
+                ctx->moistureMap[idx] *= 0.2f;
+            }
+
+            else if (sediment > cfg->sedimentCapacity || currentTemp > 1.5f) {
+                float amountToDeposit = (sediment - cfg->sedimentCapacity) * 0.12f;
+                sediment -= amountToDeposit;
+
+                if (!cells[idx].erosion_mask) {
+                    float change = modifier_modify(&cfg->modifier, &cells[nodeIndex], amountToDeposit);
+                    cells[idx].height += change;
+                    cells[idx].heightErosion += change;
+                }
+            }
+        }
+    }
+}
+
+Brushes* init_brushes_config(int32_t* xOffset, int32_t* yOffset, float* weights, int radius) {
+    Brushes* cf = (Brushes*)malloc(sizeof(Brushes));
+    cf->xOffset = xOffset;
+    cf->yOffset = yOffset;
+    cf->weights = weights;
+
+    int32_t size = radius * radius * 4;
+
+    cf->xOffset = (int32_t*)calloc(size, sizeof(int32_t));
+    cf->yOffset = (int32_t*)calloc(size, sizeof(int32_t));
+    cf->weights = (float*)calloc(size, sizeof(float));
 }
