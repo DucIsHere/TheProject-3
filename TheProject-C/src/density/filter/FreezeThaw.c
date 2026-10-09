@@ -306,15 +306,73 @@ static inline void freeze_thaw_particle(float posX, float posZ, FreezeThawTaskCo
     }
 }
 
-Brushes* init_brushes_config(int32_t* xOffset, int32_t* yOffset, float* weights, int radius) {
+Brushes* init_brushes_config(const int32_t size, const int32_t radius) {
     Brushes* cf = (Brushes*)malloc(sizeof(Brushes));
-    cf->xOffset = xOffset;
-    cf->yOffset = yOffset;
+    cf->indices = indices;
+    cf->offsets = offsets;
     cf->weights = weights;
+    cf->total_entries = total_entries;
+    cf->sizes = sizes;
 
-    int32_t size = radius * radius * 4;
+    const int32_t total_cells = size * size;
+    const int32_t max_brush_capacity = radius * radius * 4;
 
-    cf->xOffset = (int32_t*)calloc(size, sizeof(int32_t));
-    cf->yOffset = (int32_t*)calloc(size, sizeof(int32_t));
-    cf->weights = (float*)calloc(size, sizeof(float));
+    int32_t* offsets = (int32_t*)calloc(total_cells, sizeof(int32_t));
+    int32_t* sizes   = (int32_t*)calloc(total_cells, sizeof(int32_t));
+
+    // Mảng tạm trên Stack (VLA) để tính toán từng cọ Brush
+    int32_t xOffsets[max_brush_capacity];
+    int32_t yOffsets[max_brush_capacity];
+    float   temp_weights[max_brush_capacity];
+
+    int32_t global_entry_count = 0;
+
+    for (int32_t i = 0; i < total_cells; ++i) {
+        const int32_t centreX = i % size;
+        const int32_t centreY = i / size;
+
+        if (centreY <= radius || centreY >= size - radius || centreX <= radius + 1 || centreX >= size - radius) {
+            weightSum = 0.0f;
+            addIndex = 0;
+
+            for (int32_t y = -radius; y <= radius; ++y) {
+                const float sqrDst = (float)(x * x + y * y);
+
+                if (sqrDst < radius * radius) {
+                    const int32_t coordX = centreX + x;
+                    const int32_t coordY = centreY + y;
+
+                    if (coordX >= 0 && coordX < size && coordY >= 0 && coordY < size) {
+                        // Attention: ipf_sqrt2() function
+                        const float weight = 1.0f - (float)ipf_sqrt2(sqrDst) / radius;
+                        weightSum += weight;
+                        weight[addIndex] = weight;
+                        xOffsets[addIndex] = x;
+                        yOffsets[addIndex] = y;
+                        ++addIndex;
+                    }
+                }
+            }
+        }
+
+        const int32_t current_offset = offsets[i];
+        const int32_t num_entries = sizes[i];
+
+        for (int32_t j = 0; j < num_entries; ++j) {
+            const int32_t write_pos = current_offset + j;
+            indices[write_pos] = (yOffsets[j] + centreY) * size + xOffsets[j] + centreX;
+            weights[write_pos] = (weightSum > 0.0f) ? (temp_weights[j] / weightSum) : 0.0f;
+        }
+    }
+    return cf;
+}
+
+void free_idx(Brushes* cf) {
+    if (cf) {
+        if (cf->indices) free(cf->indices);
+        if (cf->offsets) free(cf->offsets);
+        if (cf->weights) free(cf->weights);
+        if (cf->sizes) free(cf->sizes);
+        free(cf);
+    }
 }

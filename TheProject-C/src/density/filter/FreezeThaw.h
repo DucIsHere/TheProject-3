@@ -92,11 +92,12 @@ struct TerrainPos {
     float _padding[3];
 };
 
-struct Brushes {
-    int32_t* xOffset;
-    int32_t* yOffset;
-    float* weights;
-    int radius;
+struct __attribute__((packed)) Brushes {
+    int32_t* offsets;   // Kích thước: size * size
+    int32_t* sizes;     // Kích thước: size * size
+    int32_t* indices;   // Kích thước: Tổng numEntries toàn bản đồ
+    float*   weights;   // Kích thước: Tổng numEntries toàn bản đồ
+    int32_t  total_entries;
 };
 
 FreezeThaw* c23_create_config(
@@ -115,3 +116,5 @@ FreezeThaw* c23_create_config(
 );
 
 void c23_free_config(FreezeThaw* conf);
+void free_idx(Brushes* cf);
+Brushes* init_brushes(int32_t size, int32_t radius);
