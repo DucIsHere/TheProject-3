@@ -1,7 +1,7 @@
 package net.prj3.world.worldgen.dendityfunction.tile.filter;
 
 import jdk.incubator.foreign.*;
-import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.IntFunction;
 
@@ -54,6 +54,45 @@ public class FreezeThaw implements AutoCloseable{
 
         FREE_CONFIG_MH = LINKER.downcallHandle(
                 LIBRARIES.lookup("c23_free_config").get(),
+                MethodType.methodType(void.class, MemoryAddress.class),
+                FunctionDescriptor.ofVoid(CLinker.C_POINTER)
+        );
+
+        APPLY_FAST_MH = LINKER.downcallHandle(
+                LIBRARIES.lookup("c23_apply_freeze_thaw_fast").get(),
+                MethodType.methodType(
+                        void.class,
+                        MemoryAddress.class,
+                        MemoryAddress.class,
+                        MemoryAddress.class,
+                        MemoryAddress.class,
+                        MemoryAddress.class,
+                        int.class, int.class,
+                        int.class, int.class,
+                        int.class,
+                        long.class,
+                        int.class,
+                        MemoryAddress.class,
+                        MemoryAddress.class
+                ),
+                FunctionDescriptor.ofVoid(
+                        CLinker.C_POINTER, CLinker.C_POINTER, CLinker.C_POINTER,
+                        CLinker.C_POINTER, CLinker.C_POINTER, CLinker.C_POINTER,
+                        CLinker.INT, CLinker.INT, CLinker.INT,
+                        CLinker.INT, CLinker.INT, CLinker.LONG,
+                        CLinker.INT,
+                        CLinker.C_POINTER, CLinker.C_POINTER
+                )
+        );
+
+        INIT_BRUSHES_MH = LINKER.downcallHandle(
+                LIBRARIES.lookup("init_brushes_config").get(),
+                MethodType.methodType(MemoryAddress.class, int.class, int.class),
+                FunctionDescriptor.of(CLinker.C_POINTER, CLinker.C_INT, CLinker.C_INT)
+        );
+
+        FREE_BRUSHES_MH = LINKER.downcallHandle(
+                LIBRARIES.lookup("free_idx").get(),
                 MethodType.methodType(void.class, MemoryAddress.class),
                 FunctionDescriptor.ofVoid(CLinker.C_POINTER)
         );
