@@ -1,6 +1,6 @@
 package net.prj3.world.worldgen.dendityfunction.tile.filter;
 
-import jdk.incubator.foreign.*;
+import prijdk.incubator.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.IntFunction;
@@ -10,7 +10,7 @@ import net.prj3.world.worldgen.GeneratorContext;
 import net.prj3.world.worldgen.densityfunction.tile.Size;
 import net.prj3.world.worldgen.heightmap.Levels;
 
-public class FreezeThaw implements AutoCloseable{
+public class FreezeThaw implements AutoCloseable, Filter{
     private static final SymbolLookup LIBRARIES = SymbolLookup.loaderLookup();
     private static final CLinker LINKER = CLinker.systemLinker();
 

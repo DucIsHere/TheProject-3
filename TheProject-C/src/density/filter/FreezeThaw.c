@@ -117,7 +117,7 @@ static inline void apply_freeze_thaw_cycle(
     }
 }
 
-static void freeze_thaw_pde_worker(ParallelRange* range) {
+static inline void freeze_thaw_pde_worker(ParallelRange* range) {
     FreezeThawTaskContext* ctx = (FreezeThawTaskContext*)range->user_data;
     FreezeThaw* cfg = ctx->config;
     Cell* cells = ctx->cells;
@@ -136,7 +136,7 @@ static void freeze_thaw_pde_worker(ParallelRange* range) {
         for (size_t cz = range->start_idx; cz < range->end_idx; ++cz) {
             int32_t relZ = (int32_t)cz << 3;
             int32_t seedZ = ctx->chunkZ + (int32_t)cz - ctx->borderChunk;
-            for (int32_t cx = 0; cx < ctx0>lengthChunk; ++cx) {
+            for (int32_t cx = 0; cx < ctx->lengthChunk; ++cx) {
                 int32_t relX = cx << 3;
                 int32_t seedX = ctx->chunkX + cx - ctx->borderChunk;
                 uint64_t chunkSeed = seed(seedX, seedZ);
