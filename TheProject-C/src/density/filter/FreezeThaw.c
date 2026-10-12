@@ -201,6 +201,32 @@ void c23_apply_freeze_thaw_fast(
     }
 }
 
+static inline void at(TerrainPos* pos, Cell* cells, int32_t width, int32_t totalCells, float posX, float posY) {
+    const int32_t coordX = (int32_t) posX;
+    const int32_t coordY = (int32_t) posY;
+    const float x = posX - coordX;
+    const float y = posY - coordY;
+    const int32_t nodeIndexNW = coordY * width + coordX;
+
+    if (nodeIndexNW + width + 1 >= totalCells || nodeIndexNW < 0) return;
+
+    float heightNW = nodes[nodeIndexNW].height;
+    float heightNE = nodes[nodeIndexNW + 1].height;
+    float heightSW = nodes[nodeIndexNW + width].height;
+    float heightSE = nodes[nodeIndexNW + width + 1].height;
+
+    float gradientsX = (heightNE - heightNW) * (1.0f - y) + (heightSE - heightSW) * y;
+    float gradientsY = (heightSW - heightNW) * (1.0f - x) + (heightSE - heightNE) * x;
+    float height = heightNW * (1.0f - x) * (1.0f - y) + heightNE * x * (1.0f - y) + heightSW * (1.0f - x) * y + heightSE * x * y;
+    return;
+}
+
+static inline void gradients_reset(TerrainPos* pos) {
+    pos->gradientsX = 0.0f;
+    pos->gradientsY = 0.0f;
+    pos->height = 0.0f;
+}
+
 static inline void freeze_thaw_particle(float posX, float posZ, FreezeThawTaskContext* ctx, TerrainPos* gradients1, TerrainPos* gradients2) {
     FreezeThaw* cfg = ctx->config;
     Cell* cells = ctx->cells;
@@ -209,6 +235,9 @@ static inline void freeze_thaw_particle(float posX, float posZ, FreezeThawTaskCo
     float dirX = 0.0f;
     float dirZ = 0.0f;
     float sediment = 0.0f;
+
+    gradients_reset(gradients1);
+    gradients_reset(gradients2);
 
     for (int32_t lifeTime = 0; lifeTime < cfg->freezeThawCycles; ++lifeTime) {
         int32_t nodeX = (int32_t)posX;
@@ -224,6 +253,8 @@ static inline void freeze_thaw_particle(float posX, float posZ, FreezeThawTaskCo
 
         float cellOffsetX = posX - nodeX;
         float cellOffsetZ = posZ - nodeZ;
+
+        at(&gradients1, cells, width, posX, posZ);
 
         float tMean = 8.0f - (cellHeight - cfg->snowLine);
         float omega = (float) (2 * M_PI / cfg->freezeThawCycles);

@@ -86,9 +86,9 @@ struct FreezeThawTaskContext {
 };
 
 struct TerrainPos {
-    float x;
-    float y;
-    float z;
+    float gradientX;
+    float gradientY;
+    float height;
     float _padding[3];
 };
 
