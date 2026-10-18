@@ -191,10 +191,14 @@ static inline void apply_glacial_particle_dynamics(float posX, float posZ, Cell*
 
         // [Ptr 6] Ứng suất cắt đáy băng: tau_b = rho * g * h * alpha
         float surfaceSlope = sqrtf(terrain.gradientX * terrain.gradientX + terrain.gradientY * terrain.gradientY);
-        basalStress[idx] = 917.0f * 9.81f * iceThickness[idx] * fmaxf(0.01f, surfaceSlope);
+        basalStress[idx] = config->RHO_ICE * config->GRAVITY * iceThickness[idx] * fmaxf(0.01f, surfaceSlope);
 
+        float overburdenPressure = config->RHO_ICE * config->GRAVITY * iceThickness[idx];
+
+        //  Tính áp suất hiệu dụng dựa trên hệ số (ví dụ: hệ số càng cao nghĩa là áp suất nước càng nhỏ, đáy càng khô và ma sát lớn)
+        float effectivePressure = fmaxf(10.0f, overburdenPressure * config->effectivePressureCoeff);
         // [Ptr 2] Định luật trượt đáy tuyến tính: v_b = C_l * tau_b
-        float slidingVelocity = config->slidingCoefficient * basalStress[idx];
+        float slidingVelocity = config->slidingCoefficient * basalStress[idx] / effectivePressure;
 
         // [Ptr 4] Dòng chảy dẻo tuyến tính hóa (Newtonian fluid)
         float internalVelocity = (1.0f / (2.0f * config->viscosityFactor)) * basalStress[idx] * iceThickness[idx];
@@ -210,6 +214,21 @@ static inline void apply_glacial_particle_dynamics(float posX, float posZ, Cell*
         cumulativeFlux[idx] += iceVelocity[idx] * iceThickness[idx];
         float continuityDelta = surfaceMassBalance[idx] - (cumulativeFlux[idx] * 0.001f);
         iceThickness[idx] = fmaxf(0.0f, iceThickness[idx] + continuityDelta);
+
+
+        // Giả lập nhiệt độ môi trường dựa trên cao độ so với mực nước biển/ELA
+        float ambientTempCelsius = 15.0f - (terrain.height * 0.0065f); // Tỷ lệ giảm nhiệt độ theo độ cao (lapse rate)
+        float ambientTempKelvin = ambientTempCelsius + config->TO_KELVIN;
+
+        // Ảnh hưởng của nhiệt năng riêng đến độ nhớt của băng (Băng ấm mềm hơn, băng lạnh cứng hơn)
+        // Hệ số khuếch tán nhiệt (thermalDiffusivity) giúp lan truyền nhiệt theo thời gian
+        float temperatureFactor = fminf(1.5f, ambientTempKelvin / 273.15f);
+
+        // Hiệu chỉnh độ nhớt thực tế dựa trên nhiệt độ (Warm-ice vs Cold-ice rheology)
+        float effectiveViscosity = config->viscosityFactor * (1.0f / temperatureFactor);
+
+        // Cập nhật lại dòng chảy dẻo
+        float internalVelocity = (1.0f / (2.0f * effectiveViscosity)) * basalStress[idx] * iceThickness[idx];
 
         // [Ptr 11] Tan chảy tuyến tính theo độ-ngày (PDD)
         float simulatedTemp = 2.0f - (terrain.height - 50.0f) * 0.01f;
@@ -248,9 +267,15 @@ static inline void apply_glacial_particle_dynamics(float posX, float posZ, Cell*
             float depositAmount = subglacialTill[idx] * 0.1f;
             subglacialTill[idx] -= depositAmount;
             if (!cells[idx].erosionMask) {
-                float isostaticAdjustment = (917.0f * iceThickness[idx]) / 3300.0f;
+                float isostaticAdjustment = (config->RHO_ICE * iceThickness[idx]) / config->RHO_MANTLE;
                 cells[idx].height += depositAmount - (isostaticAdjustment * 0.001f);
             }
+        }
+
+        // Nếu độ cứng flexuralRigidity lớn, sức nặng của băng tại ô này sẽ phân bổ lún sang cả các ô xung quanh
+        if (config->flexuralRigidity > 0.0f) {
+            float regionalLoad = (config->RHO_ICE * iceThickness[idx] / config->RHO_MANTLE) * (config->flexuralRigidity * 0.001f);
+            // Bạn có thể cộng dồn regionalLoad này vào một mảng phụ (isostatic depression map) rồi blur nhẹ qua các hàng xóm trước khi áp dụng vào height.
         }
 
         // Cập nhật tọa độ hạt dịch chuyển theo hướng dòng chảy băng

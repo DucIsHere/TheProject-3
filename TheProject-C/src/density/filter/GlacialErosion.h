@@ -137,3 +137,5 @@ void c23_run_glacial_simulation(
 
 Glacial* c23_glacial_conf(Glacial* conf);
 void c23_glacial_free(Glacial* cf);
+void free_idx(Brushes* cf);
+Brushes* init_brushes_config(int32_t size, int32_t radius);
