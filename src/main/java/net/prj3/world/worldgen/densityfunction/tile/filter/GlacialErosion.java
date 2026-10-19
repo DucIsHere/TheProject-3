@@ -121,5 +121,131 @@ public class GlacialErosion extends Filter{
 
         int totalCells = mapSize * mapSize;
         long byteSize = (long) totalCells * CLinker.C_FLOAT.byteSize();
+
+        this.iceThickness = MemorySegment.allocateNative(byteSize, 4, scope);
+        this.iceVelocity = MemorySegment.allocateNative(byteSize, 4, scope);
+        this.basalStress = MemorySegment.allocateNative(byteSize, 4, scope);
+        this.surfaceMassBalance = MemorySegment.allocateNative(byteSize, 4, scope);
+        this.cumulativeDamage = MemorySegment.allocateNative(byteSize, 4, scope);
+        this.bedrockDamage = MemorySegment.allocateNative(byteSize, 4, scope);
+        this.subglacialTill = MemorySegment.allocateNative(byteSize, 4, scope);
+
+        try {
+            MemorySegment dumyModifier = MemorySegment.allocateNative(28, scope);
+
+            this.nativeConfig = (MemoryAddress) CREATE_CONFIG_MH.invoke(
+                    mapSize,
+                    slidingCoefficient, erosionConstant, thermalDiffusivity, viscosityFactor,
+                    effectivePressureCoeff, elaHeight, kinWaveSpees, degreeDayFactor, massBalanceGradient,
+                    flexuralRigidity, cryoDamageRate,
+                    0, 0, 1.0f,
+                    dumyModifier,
+                    modMin, modMax, modInverted
+            );
+
+            this.nativeBrushes = (MemoryAddress) INIT_BRUSHES.invoke(mapSize, 28);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public int getSize() {
+        return this.mapSize;
+    }
+
+    @Override
+    public void apply(Filterable map, int regionX, int regionZ, int iterations) {
+        final Size size = map.getBlockSize();
+        final int width = size.width();
+        final int height = size.height();
+        final int border = size.border();
+        final int chunkX = map.getBlockX();
+        final int chunkZ = map.getBlockZ();
+        final int lengthChunk = map.getBlockSize().total() << 4;
+        final int borderChunk = map.getBlockSize().total() >> 4;
+
+        MemoryAddress cellsAddress = MemoryAddress.ofLong(map.getBackingAddress());
+
+        MemoryAddress threadPoolAddress = MemoryAddress.NULL;
+
+        try {
+            APPLY_GLACIAL.invoke(
+                    threadPoolAddress,
+                    this.nativeConfig,
+                    cellsAddress,
+                    this.iceThickness.address();
+                    this.basalStress.address();
+                    this.surfaceMassBalance.address();
+                    this.cumulativeDamage.address();
+                    this.bedrockDamage.address();
+                    this.subglacialTill.address();
+                    this.iceVelocity.address();
+                    chunkX, chunkZ,
+                    lengthChunk, borderChunk, (long) this.seed,
+                    iterations
+            );
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            if (nativeBrushes != null && !nativeBrushes.equals(MemoryAddress.NULL)) {
+                FREE_BRUSHES.invoke(nativeBrushes);
+            }
+
+            if (nativeConfig != null && !nativeConfig.equals(MemoryAddress.NULL)) {
+                FREE_CONFIG_MH.invoke(nativeConfig);
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            if (scope.isAlive()) {
+                scope.close();
+            }
+        }
+    }
+
+    public static class Factory implements IntFunction<GlacialErosion> {
+        private static final int SEED_OFFSET = 123789;
+        private final int seed;
+        private final Modifier modifier;
+        private final FilterSettings.GlacialErosion settings;
+        private final float modMin;
+        private final float modMax;
+
+        private Factory(final int seed, final FilterSettings filters, float Levels levels) {
+            this.seed = seed;
+            this.settings = filters.GlacialErosion.copy();
+            this.modMin = levels.ground;
+            this.modMax = levels.ground(15);
+            this.modifier = modifier.range(this.modMin, this.modMax);
+
+            @Override
+            public GlacialErosion apply(final int size) {
+                return new GlacialErosion(
+                        size,
+                        this.seed,
+                        this.modifier,
+                        this.settings.slidingCoefficient,
+                        this.settings.erosionConstant,
+                        this.settings.viscosityFactor,
+                        this.settings.kinWaveSpeed,
+                        this.settings.elaHeight,
+                        this.settings.massBalanceGradient,
+                        this.settings.flexuralRigidity,
+                        this.settings.thermalDiffusivity,
+                        this.settings.degreeDayFactor,
+                        this.settings.tillTransportRate,
+                        this.settings.effectivePressureCoeff,
+                        this.settings.cryoDamageRate,
+                        this.modMin,
+                        this.modMax,
+                        false
+                );
+            }
+        }
     }
 }

@@ -129,8 +129,8 @@ void c23_run_glacial_simulation(
     int32_t totalCells,
     int32_t lengthChunk,
     int32_t borderChunk,
-    int32_t chunkX,
-    int32_t chunkZ,
+    int32_t blockZ,
+    int32_t blockX,
     uint64_t seed,
     int32_t iterations
 );

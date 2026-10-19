@@ -31,7 +31,11 @@ Glacial* c23_glacial_conf(
         int32_t* brushSizes,
         int32_t* brushIndices,
         float* brushWeights,
-        int32_t iterations
+        int32_t iterations,
+
+        float modMin,
+        float modMax,
+        bool modInterted
     ) {
     Glacial* conf = (Glacial*)malloc(sizeof(Glacial));
     if (!conf) { return NULL; }
