@@ -1,0 +1,54 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made by L.Duc",
+	"texture_size": [64, 64],
+	"textures": {
+		"1": "project3:block/till_sediment",
+		"particle": "project3:block/till_sediment"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 4, 4], "texture": "#1"},
+				"east": {"uv": [0, 4, 4, 8], "texture": "#1"},
+				"south": {"uv": [4, 0, 8, 4], "texture": "#1"},
+				"west": {"uv": [4, 4, 8, 8], "texture": "#1"},
+				"up": {"uv": [0, 8, 4, 12], "texture": "#1"},
+				"down": {"uv": [8, 0, 12, 4], "texture": "#1"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [-7, -35, 49],
+			"translation": [0.5, 0.75, -0.25],
+			"scale": [0.25, 0.25, 0.25]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [-7, -35, 49],
+			"translation": [0.5, 0.75, -0.5],
+			"scale": [0.25, 0.25, 0.25]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, -24, 0],
+			"translation": [-1.5, -2.75, -3],
+			"scale": [0.62, 0.62, 0.63]
+		},
+		"firstperson_lefthand": {
+			"rotation": [0, -24, 0],
+			"translation": [-1.5, -2.75, -3],
+			"scale": [0.62, 0.62, 0.62]
+		},
+		"ground": {
+			"rotation": [0, 1, 0],
+			"scale": [0.25, 0.25, 0.25]
+		},
+		"gui": {
+			"rotation": [24, -46, -90],
+			"translation": [0, -0.25, 0],
+			"scale": [0.66, 0.66, 0.66]
+		}
+	}
+}

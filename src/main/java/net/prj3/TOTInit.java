@@ -24,12 +24,13 @@ import net.prj3.world.worldgen.noise.module.Noises;
 import net.prj3.world.worldgen.structure.rule.StructureRule;
 import net.prj3.world.worldgen.structure.rule.StructureRules;
 import net.prj3.world.worldgen.surface.rule.RGFSurfaceRules;
+import net.prj3.block.BlockInit;
 
 public class TOTInit {
-	public static final String MOD_ID = "regenerationforrgrd";
+	public static final String MOD_ID = "prj3";
 	public static final String LEGACY_MOD_ID = "terraforged";
 	public static final String ORIGINAL_MO_ID = "reterraforged";
-	public static final Logger LOGGER = LogManager.getLogger("TerrianOfTerrian");
+	public static final Logger LOGGER = LogManager.getLogger("Project3");
 
 	public static void bootstrap() {
 		RGFBuiltInRegistries.bootstrap();
@@ -51,6 +52,8 @@ public class TOTInit {
 		RegistryUtil.createDataRegistry(RGFRegistries.NOISE, Noise.DIRECT_CODEC);
 		RegistryUtil.createDataRegistry(RGFRegistries.PRESET, Preset.DIRECT_CODEC);
 		RegistryUtil.createDataRegistry(RGFRegistries.STRUCTURE_RULE, StructureRule.DIRECT_CODEC);
+
+		ModBlocks.registerModBlocks();
 	}
 	
 	public static ResourceLocation location(String name) {
