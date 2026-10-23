@@ -9,7 +9,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
 public class BlockInit {
-    public static final Block SEDIMENT = registerBlock("till_sediment",
+    public static final Block TILL_SEDIMENT = registerBlock("till_sediment",
             new Block(BlockBehaviour.Properties.of().strength(1.5f).requiresCorrectToolForDrops())
     );
 

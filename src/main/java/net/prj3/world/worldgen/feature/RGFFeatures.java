@@ -1,25 +1,27 @@
-package net.prj3.data.world.feature;
+package net.prj3.world.worldgen.feature.world.worldgen.feature;
 
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.Registry;
+import net.minecraft.world.level.levelgen.feature.configurations.DiskConfiguration;
+import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
+import net.prj3.world.worldgen.feature.platform.RegistryUtil;
+import net.prj3.world.worldgen.feature.world.worldgen.feature.chance.ChanceFeature;
+import net.prj3.world.worldgen.feature.world.worldgen.feature.template.TemplateFeature;
 
-public class RGFFeatures {
+public class RTFFeatures {
+    public static final Feature<TemplateFeature.Config<?>> TEMPLATE = register("template", new TemplateFeature(TemplateFeature.Config.CODEC));
+    public static final Feature<BushFeature.Config> BUSH = register("bush", new BushFeature(BushFeature.Config.CODEC));
+    public static final Feature<DiskConfiguration> DISK = register("disk", new DiskFeature(DiskConfiguration.CODEC));
+    public static final Feature<ChanceFeature.Config> CHANCE = register("chance", new ChanceFeature(ChanceFeature.Config.CODEC));
+    public static final Feature<ErodeFeature.Config> ERODE = register("erode", new ErodeFeature(ErodeFeature.Config.CODEC));
+    public static final Feature<DecorateSnowFeature.Config> DECORATE_SNOW = register("decorate_snow", new DecorateSnowFeature(DecorateSnowFeature.Config.CODEC));
+    public static final Feature<SwampSurfaceFeature.Config> SWAMP_SURFACE = register("swamp_surface", new SwampSurfaceFeature(SwampSurfaceFeature.Config.CODEC));
 
-    public static final Registry<Feature<?>> REGISTRY =
-            FabricRegistryBuilder.createSimple(Registries.FEATURE, id("features")).buildAndRegister();
-
-    public static final Feature<RiverConfig> RGF_RIVER =
-            register("rgf_river", new RGFRiverFeature(RiverConfig.CODEC));
-
-    private static <T extends Feature<?>> T register(String id, T feature) {
-        Registry.register(REGISTRY, id(id), feature);
-        return feature;
+    public static void bootstrap() {
     }
 
-    private static ResourceLocation id(String s) {
-        return new ResourceLocation("yourmodid", s);
+    private static <T extends FeatureConfiguration> Feature<T> register(String name, Feature<T> feature) {
+        RegistryUtil.register(BuiltInRegistries.FEATURE, name, feature);
+        return feature;
     }
 }

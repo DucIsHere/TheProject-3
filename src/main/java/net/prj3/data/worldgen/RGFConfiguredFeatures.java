@@ -35,13 +35,13 @@ import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvi
 import net.minecraft.world.level.levelgen.feature.stateproviders.RuleBasedBlockStateProvider;
 import net.minecraft.world.level.levelgen.feature.trunkplacers.StraightTrunkPlacer;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.prj3.RegenerationForrged;
+import net.prj3.TOTInit;
 import net.prj3.data.worldgen.preset.MiscellaneousSettings;
 import net.prj3.data.worldgen.preset.Preset;
 import net.prj3.world.worldgen.feature.BushFeature;
 import net.prj3.world.worldgen.feature.DecorateSnowFeature;
 import net.prj3.world.worldgen.feature.ErodeFeature;
-import net.prj3.world.worldgen.feature.RTFFeatures;
+import net.prj3.world.worldgen.feature.RGFFeatures;
 import net.prj3.world.worldgen.feature.SwampSurfaceFeature;
 import net.prj3.world.worldgen.feature.chance.ChanceFeature;
 import net.prj3.world.worldgen.feature.chance.ChanceModifier;

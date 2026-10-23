@@ -1,119 +1,83 @@
 package net.prj3.data.worldgen;
 
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.HolderGetter;
-import net.minecraft.registry.entry.RegistryEntry;
-
-import net.minecraft.data.server.feature.PlacedFeatureBootstrap;
-import net.minecraft.data.server.worldgen.BootstrapContext;
-import net.minecraft.util.Identifier;
-
-import net.minecraft.world.gen.feature.ConfiguredFeature;
-import net.minecraft.world.gen.feature.PlacedFeature;
-import net.minecraft.world.gen.feature.PlacementModifier;
-import net.minecraft.world.gen.feature.PlacementModifiers;
-import net.minecraft.world.gen.feature.CountPlacementModifier;
-import net.minecraft.world.gen.feature.HeightmapPlacementModifier;
-
-import net.minecraft.world.gen.feature.FeaturePlacement;
-
-import net.minecraft.world.gen.GenerationStep;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaced;
-
-import net.prj3.RGFCommon;
+import net.minecraft.core.HolderGetter;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.worldgen.BootstapContext;
+import net.minecraft.data.worldgen.features.MiscOverworldFeatures;
+import net.minecraft.data.worldgen.features.OreFeatures;
+import net.minecraft.data.worldgen.placement.MiscOverworldPlacements;
+import net.minecraft.data.worldgen.placement.OrePlacements;
+import net.minecraft.data.worldgen.placement.PlacementUtils;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.dimension.LevelStem;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.placement.CountPlacement;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import net.minecraft.world.level.levelgen.placement.PlacementModifier;
+import net.minecraft.world.level.levelgen.placement.SurfaceWaterDepthFilter;
+import net.prj3.RTFCommon;
 import net.prj3.data.worldgen.preset.MiscellaneousSettings;
 import net.prj3.data.worldgen.preset.Preset;
-import net.prj3.data.worldgen.RGFConfiguredFeatures;
+import net.prj3.world.worldgen.feature.placement.RTFPlacementModifiers;
 
-public class RGFPlacedFeatures {
+public class RTFPlacedFeatures {
+    public static final ResourceKey<PlacedFeature> ERODE = createKey("processing/erode");
+    public static final ResourceKey<PlacedFeature> DECORATE_SNOW = createKey("processing/decorate_snow");
+    public static final ResourceKey<PlacedFeature> SWAMP_SURFACE = createKey("processing/swamp_surface");
 
-    public static final RegistryKey<PlacedFeature> GIANT_RED_MUSHROOM = create("trees/giant_red_mushroom");
-    public static final RegistryKey<PlacedFeature> GIANT_BROWN_MUSHROOM = create("trees/giant_brown_mushroom");
+    public static final ResourceKey<PlacedFeature> ACACIA_TREES = createKey("acacia_trees");
 
-    public static final RegistryKey<PlacedFeature> OAK_TREES = create("trees/oak");
-    public static final RegistryKey<PlacedFeature> BIRCH_TREES = create("trees/birch");
-    public static final RegistryKey<PlacedFeature> JUNGLE_TREES = create("trees/jungle");
-    public static final RegistryKey<PlacedFeature> ACACIA_TREES = create("trees/acacia");
-    public static final RegistryKey<PlacedFeature> DARK_OAK_TREES = create("trees/dark_oak");
+    public static final ResourceKey<PlacedFeature> FOREST_GRASS = createKey("forest_grass");
 
-    public static void bootstrap(Preset preset, BootstrapContext<PlacedFeature> ctx) {
+    public static void bootstrap(Preset preset, BootstapContext<PlacedFeature> ctx) {
+        HolderGetter<ConfiguredFeature<?, ?>> features = ctx.lookup(Registries.CONFIGURED_FEATURE);
+        MiscellaneousSettings miscellaneous = preset.miscellaneous();
 
-        HolderGetter<ConfiguredFeature<?, ?>> features = ctx.getRegistryLookup(RegistryKeys.CONFIGURED_FEATURE);
-        MiscellaneousSettings miscellaneousSettings = preset.misc();
+        PlacementModifier disableOnOverworld = RTFPlacementModifiers.blacklistDimensions(LevelStem.OVERWORLD);
 
-        // Tree placement modifiers
-        PlacementModifier heightmap = HeightmapPlacementModifier.of();
-        PlacementModifier count5 = CountPlacementModifier.of(5);
-        PlacementModifier count7 = CountPlacementModifier.of(7);
+        PlacementUtils.register(ctx, ACACIA_TREES, features.getOrThrow(RTFConfiguredFeatures.ERODE));
 
-        // ===== Mushroom =====
-        ctx.register(
-            GIANT_RED_MUSHROOM,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.GIANT_RED_MUSHROOM), 
-                PlacementModifiers.list(heightmap, count5))
-        );
+        if(miscellaneous.erosionDecorator) {
+            PlacementUtils.register(ctx, ERODE, features.getOrThrow(RTFConfiguredFeatures.ERODE));
+        }
 
-        ctx.register(
-            GIANT_BROWN_MUSHROOM,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.GIANT_BROWN_MUSHROOM), 
-                PlacementModifiers.list(heightmap, count5))
-        );
+        if(miscellaneous.naturalSnowDecorator || miscellaneous.smoothLayerDecorator) {
+            PlacementUtils.register(ctx, DECORATE_SNOW, features.getOrThrow(RTFConfiguredFeatures.DECORATE_SNOW));
+        }
 
-        // ===== Trees =====
-        ctx.register(
-            OAK_TREES,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.OAK_TREE),
-                PlacementModifiers.list(heightmap, count7))
-        );
+        PlacementUtils.register(ctx, SWAMP_SURFACE, features.getOrThrow(RTFConfiguredFeatures.SWAMP_SURFACE));
 
-        ctx.register(
-            BIRCH_TREES,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.BIRCH_TREE),
-                PlacementModifiers.list(heightmap, count7))
-        );
+        if(!miscellaneous.vanillaSprings) {
+            PlacementUtils.register(ctx, MiscOverworldPlacements.SPRING_WATER, features.getOrThrow(MiscOverworldFeatures.SPRING_WATER), disableOnOverworld);
+        }
 
-        ctx.register(
-            JUNGLE_TREES,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.JUNGLE_TREE),
-                PlacementModifiers.list(heightmap, count5))
-        );
+        if(!miscellaneous.vanillaLavaSprings) {
+            PlacementUtils.register(ctx, MiscOverworldPlacements.SPRING_LAVA, features.getOrThrow(MiscOverworldFeatures.SPRING_LAVA_OVERWORLD), disableOnOverworld);
+            PlacementUtils.register(ctx, MiscOverworldPlacements.SPRING_LAVA_FROZEN, features.getOrThrow(MiscOverworldFeatures.SPRING_LAVA_FROZEN), disableOnOverworld);
+        }
 
-        ctx.register(
-            ACACIA_TREES,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.ACACIA_TREE),
-                PlacementModifiers.list(heightmap, count5))
-        );
+        if(!miscellaneous.vanillaLavaLakes) {
+            PlacementUtils.register(ctx, MiscOverworldPlacements.LAKE_LAVA_SURFACE, features.getOrThrow(MiscOverworldFeatures.LAKE_LAVA), disableOnOverworld);
+            PlacementUtils.register(ctx, MiscOverworldPlacements.LAKE_LAVA_UNDERGROUND, features.getOrThrow(MiscOverworldFeatures.LAKE_LAVA), disableOnOverworld);
+        }
 
-        ctx.register(
-            DARK_OAK_TREES,
-            new PlacedFeature(features.getOrThrow(RGFConfiguredFeatures.DARK_OAK_TREE),
-                PlacementModifiers.list(heightmap, count5))
-        );
+        if(miscellaneous.strataDecorator) {
+            PlacementUtils.register(ctx, OrePlacements.ORE_DIRT, features.getOrThrow(OreFeatures.ORE_DIRT), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_GRAVEL, features.getOrThrow(OreFeatures.ORE_GRAVEL), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_GRANITE_UPPER, features.getOrThrow(OreFeatures.ORE_GRANITE), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_DIORITE_UPPER, features.getOrThrow(OreFeatures.ORE_DIORITE), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_ANDESITE_UPPER, features.getOrThrow(OreFeatures.ORE_ANDESITE), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_GRANITE_LOWER, features.getOrThrow(OreFeatures.ORE_GRANITE), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_DIORITE_LOWER, features.getOrThrow(OreFeatures.ORE_DIORITE), disableOnOverworld);
+            PlacementUtils.register(ctx, OrePlacements.ORE_ANDESITE_LOWER, features.getOrThrow(OreFeatures.ORE_ANDESITE), disableOnOverworld);
+        }
 
-        context.register(
-            Carvers.CAVE,
-            new PlacesCavers(RGFCongiguredCavers.CAVE)
-        );
+        if(miscellaneous.customBiomeFeatures) {
+            PlacementUtils.register(ctx, FOREST_GRASS, features.getOrThrow(RTFConfiguredFeatures.FOREST_GRASS), PlacementUtils.HEIGHTMAP_WORLD_SURFACE, CountPlacement.of(7));
+        }
     }
 
-    private static RegistryKey<PlacedFeature> create(String id) {
-        return RegistryKey.of(RegistryKeys.PLACED_FEATURE, RGFCommon.id(id));
-    }
-
-    public static final ResourceKey<PlacedFeature> RIVER_PLACED =
-            ResourceKey.create(Regiatries.PLACED_FEATURE, id("river"));
-
-    public static void bootstrap(BootstrapContext<PlacedFeature> ctx) {
-
-        HolderGetter<ConfiguredFeature<?, ?>> configured =
-            ctx.lookup(Registries.CONFIGURED_FEATURE);
-
-        PlacementUtils.register(
-            ctx,
-            RIVER_PLACED,
-            configured.getOrThrow(RGFConfiguredFeatures.RIVER),
-            PlacementUtils.FULL_RANGE
-        );
+    private static ResourceKey<PlacedFeature> createKey(String name) {
+        return ResourceKey.create(Registries.PLACED_FEATURE, RTFCommon.location(name));
     }
 }
