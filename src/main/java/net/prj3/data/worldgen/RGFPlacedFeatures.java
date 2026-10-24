@@ -15,10 +15,10 @@ import net.minecraft.world.level.levelgen.placement.CountPlacement;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import net.minecraft.world.level.levelgen.placement.SurfaceWaterDepthFilter;
-import net.prj3.RTFCommon;
+import net.prj3.TOTInit;
 import net.prj3.data.worldgen.preset.MiscellaneousSettings;
 import net.prj3.data.worldgen.preset.Preset;
-import net.prj3.world.worldgen.feature.placement.RTFPlacementModifiers;
+import net.prj3.world.worldgen.feature.placement.RGFPlacementModifiers;
 
 public class RTFPlacedFeatures {
     public static final ResourceKey<PlacedFeature> ERODE = createKey("processing/erode");
