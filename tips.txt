@@ -1,5 +1,0 @@
-Terrain.mbz()        -> Init toàn mod
-Terrain.bt(ctx)      -> Bootstrap phase
-Terrain.mbt { }      -> Create object
-Terrain.bz(...)      -> Register 
--> tips.txt use for file kotlin
