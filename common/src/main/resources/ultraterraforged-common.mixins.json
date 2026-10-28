@@ -1,0 +1,46 @@
+{
+  "required": true,
+  "plugin": "com.pandaismyname1.ultraterraforged.mixin.plugin.MixinPlugin",
+  "package": "com.pandaismyname1.ultraterraforged.mixin",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+  	"MixinNoiseChunk",
+  	"MixinRandomState",
+  	"MixinChunkMap",
+  	"MixinUtil",
+  	"MixinBiomeGenerationSettings",
+  	"MixinSurfaceSystem",
+  	"MixinStructure",
+  	"MixinMinecraftServer",
+  	"MixinMinecraftServerTemplates",
+  	"MixinSpawnFinder",
+  	"MixinClimateSampler",
+  	"MixinChunkStatusTasks",
+  	"MixinServerPacksSource",
+  	"MixinResourceManagerRegistryLoadTask",
+  	"MixinNoiseBasedChunkGenerator",
+  	"MixinContext",
+  	"MixinSurfaceRules$BiomeConditionSource",
+  	"terrablender.MixinParameterList",
+  	"terrablender.MixinClimateSampler",
+  	"terrablender.MixinTargetPoint",
+  	"terrablender.MixinNoiseChunk",
+  	"worldpreview.SampleUtilsMixin",
+  	"c2me.MixinChunkMapOpenCL",
+  	"streams.MixinRiverCarverFeature",
+  	"streams.MixinStreamFlowGrid",
+  	"streams.MixinWorldGenRegion",
+  	"alexscaves.MixinBiomeGenerationNoiseCondition",
+  	"alexscaves.MixinClimateSampler",
+  	"byepregen.AccessorNoiseChunk",
+  	"byepregen.MixinArenaNoiseFiller"
+  ],
+  "client": [
+  	"ScreenInvoker",
+  	"MixinCreateWorldScreen"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

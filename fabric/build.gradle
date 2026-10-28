@@ -1,0 +1,191 @@
+plugins {
+    id "com.gradleup.shadow"
+}
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+loom {
+    accessWidenerPath = project(":common").loom.accessWidenerPath
+
+    // the dev runs' mod is both modules: Fabric Loader 0.19 only looks for the access widener in the mod's own paths
+    mods {
+        main {
+            sourceSet sourceSets.main
+            sourceSet project(":common").sourceSets.main
+        }
+    }
+}
+
+configurations {
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+
+    // mods the dev runs load like a mods folder would: for mods made of nested jars, which the classpath doesn't unpack
+    devModsFolder {
+        canBeResolved = true
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    api("net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}") { exclude group: "net.fabricmc", module: "fabric-loader" }
+
+    common(project(path: ":common")) { transitive = false }
+    shadowBundle(project(path: ":common", configuration: "transformProductionFabric")) { transitive = false }
+
+    // Performance mods, in the dev runs only: the ones PerformanceMods lists for Fabric on this version, pinned to
+    // Modrinth version ids (the version numbers are shared between loaders). -Putf.perfMods=false leaves them out, to
+    // measure or debug UltraTerraForged on its own. See docs/porting/performance-mods.md.
+    if (project.findProperty("utf.perfMods") != "false") {
+        // C2ME and C2ME OpenCL 0.4.0-alpha.0.62: their modules are nested jars. OpenCL needs Java 25, which 26.1 runs on.
+        devModsFolder "maven.modrinth:c2me-fabric:o1m4A4Rk"
+        devModsFolder "maven.modrinth:c2me-ocl:FIySyMEQ"
+        localRuntime "maven.modrinth:lithium:Oqq8TOAV"          // Lithium 0.24.7
+        localRuntime "maven.modrinth:sodium:tZQ3jqnf"           // Sodium 0.9.2
+        localRuntime "maven.modrinth:voxy:Zt3LPI0b"             // Voxy 0.2.18: level of detail, to see generated terrain from far off
+    }
+    // Streams Reflowing 2.15.2, to see UltraTerraForged's river currents in a dev run: -Putf.streams=true
+    if (project.findProperty("utf.streams") == "true") {
+        localRuntime "maven.modrinth:streams-reflowing:JUwdeyCO"
+    }
+    // another mod for a dev run, e.g. to try a compat: -Putf.extraMod=<path to its jar, or a dependency such as
+    // curse.maven:bye-pregen-1567378:9267100>
+    def extraMod = project.findProperty("utf.extraMod")
+    if (extraMod != null) {
+        localRuntime(new File(extraMod).exists() ? files(extraMod) : extraMod)
+    }
+}
+
+processResources {
+    def props = [
+        version: project.version,
+        minecraft_version: rootProject.minecraft_version,
+        fabric_loader_version: rootProject.fabric_loader_version,
+        fabric_api_version: rootProject.fabric_api_version,
+        fabric_api_min: rootProject.fabric_api_min
+    ]
+    inputs.properties props
+
+    filesMatching("fabric.mod.json") {
+        expand props
+    }
+}
+
+// the released jar: nothing to remap since 26.1
+shadowJar {
+    exclude "architectury.common.json"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "fabric"
+}
+
+
+jar {
+    archiveClassifier = "dev"
+}
+
+sourcesJar {
+    def commonSources = project(":common").sourcesJar
+    dependsOn commonSources
+    from commonSources.archiveFile.map { zipTree(it) }
+}
+
+components.java {
+    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+        skip()
+    }
+}
+
+// A client run that drives world creation and takes screenshots: ./gradlew :fabric:runClientTest
+// Output (screenshots, log of what happened) goes to fabric/build/clienttest.
+sourceSets {
+    clienttest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+def devModsDir = layout.buildDirectory.dir("devmods")
+def syncDevMods = tasks.register("syncDevMods", Sync) {
+    from configurations.devModsFolder
+    into devModsDir
+}
+tasks.matching { it.name.startsWith("run") }.configureEach {
+    dependsOn syncDevMods
+}
+
+loom {
+    runs {
+        configureEach {
+            property "fabric.addMods", devModsDir.get().asFile.absolutePath
+        }
+        // new worlds in the dev game start in creative with cheats, to fly around and inspect terrain
+        client {
+            property "ultraterraforged.dev.creative", "true"
+        }
+        clientTest {
+            client()
+            name = "Client Test"
+            source sourceSets.clienttest
+            runDir = "run-clienttest"
+            property "ultraterraforged.clienttest.out", file("build/clienttest").absolutePath
+            // -Dultraterraforged.clienttest.tour=true visits the landforms in a default world instead
+            property "ultraterraforged.clienttest.tour", System.getProperty("ultraterraforged.clienttest.tour", "false")
+            // -Dultraterraforged.clienttest.seed=<seed> makes the tour's world with that seed
+            property "ultraterraforged.clienttest.seed", System.getProperty("ultraterraforged.clienttest.seed", "")
+            property "ultraterraforged.clienttest.stops", System.getProperty("ultraterraforged.clienttest.stops", "river,salt_flat,alluvial_fan,glacial_valley,cirque,drumlins,moraine,barrier_island,karst,sinkhole,delta,wetland,lake,peninsula,coastal_island,sand_bar,skerry,volcanic_island,river_island,submarine_canyon,seamount,guyot,blue_hole,coral_reef,ocean_trench,ocean_ridge,sand_waves")
+            property "ultraterraforged.dev.creative", "true"
+            // a flight recording of the run, e.g. to find who started a thread: -Dutf.jfr=<file>
+            if (System.getProperty("utf.jfr") != null) {
+                vmArg "-XX:StartFlightRecording=filename=" + System.getProperty("utf.jfr") + ",settings=profile"
+            }
+        }
+    }
+}
+
+// Maven: <group>:ultraterraforged-fabric:<version>, published to the repository given by -PmavenUrl (CI publishes to a folder
+// and pushes it to the "maven" branch)
+publishing {
+    publications {
+        register("maven", MavenPublication) {
+            artifactId = "${rootProject.archives_base_name}-${project.name}"
+            version = project.ext.mavenVersion
+            artifact(shadowJar) {
+                builtBy shadowJar
+                classifier ""
+            }
+            artifact(sourcesJar) {
+                builtBy sourcesJar
+                classifier "sources"
+            }
+        }
+    }
+    repositories {
+        if (project.hasProperty("mavenUrl")) {
+            maven {
+                url = project.mavenUrl
+                if (!project.mavenUrl.toString().startsWith("file:")) {
+                    credentials {
+                        username = project.findProperty("mavenUsername") ?: "ci"
+                        password = project.findProperty("mavenPassword") ?: "ci"
+                    }
+                }
+            }
+        }
+    }
+}
