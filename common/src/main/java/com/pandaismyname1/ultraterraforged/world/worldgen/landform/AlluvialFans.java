@@ -1,6 +1,7 @@
 package com.pandaismyname1.ultraterraforged.world.worldgen.landform;
 
 import java.util.Set;
+import java.lang.foreign.*;
 
 import com.pandaismyname1.ultraterraforged.data.preset.settings.LandformSettings;
 import com.pandaismyname1.ultraterraforged.world.worldgen.biome.type.BiomeType;
@@ -12,7 +13,7 @@ import com.pandaismyname1.ultraterraforged.world.worldgen.noise.module.Noise;
 import com.pandaismyname1.ultraterraforged.world.worldgen.terrain.TerrainType;
 
 /**
- * Alluvial fans: cones of gravel and sand spread out where steep mountain slopes meet flat land, left by floods washing
+ * Alluvial fans: mcones of gravel and sand spread out where steep mountain slopes meet flat land, left by floods washing
  * rock down from the mountain. Each fan's apex sits at the foot of the slope and it spreads downhill over the plain in
  * a gently curving cone, highest at the apex and meeting the plain at its toe. They're most common in dry climates,
  * where little grows to hold the rock back.
